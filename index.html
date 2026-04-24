@@ -1,1 +1,718 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise QA Evaluation System</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #6366f1;
+            --bg-light: #f8fafc;
+            --sidebar-bg: #ffffff;
+            --card-border: rgba(0, 0, 0, 0.05);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
 
+        body {
+            font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- Layout --- */
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        #sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        /* --- Components --- */
+        .sidebar-brand {
+            padding: 1.5rem 2rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            padding: 0.8rem 2rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary-color);
+            background: rgba(79, 70, 229, 0.05);
+            border-left-color: var(--primary-color);
+        }
+
+        .card {
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            background: #fff;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--card-border);
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .stats-card {
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-icon {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 4rem;
+            opacity: 0.05;
+            color: var(--primary-color);
+        }
+
+        /* --- Custom UI Elements --- */
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            border-radius: 0.6rem;
+        }
+
+        .form-control, .form-select {
+            padding: 0.6rem 1rem;
+            border-radius: 0.6rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+        }
+
+        .eval-topic-card {
+            border: 1px solid #f1f5f9;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: 0.2s;
+        }
+
+        .eval-topic-card:hover {
+            background: #fff;
+            border-color: var(--primary-color);
+        }
+
+        /* --- Loading --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 2000; display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- Table --- */
+        .table thead th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            border-top: none;
+        }
+
+        /* --- Auth View --- */
+        .auth-container {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            background: #fff;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="d-none">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <!-- Login View -->
+    <div id="view-auth" class="auth-container">
+        <div class="auth-card">
+            <div class="text-center mb-4">
+                <div class="h1 text-primary mb-2"><i class="bi bi-shield-check"></i></div>
+                <h4 class="fw-bold">QA Evaluation System</h4>
+                <p class="text-muted small">กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ</p>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">อีเมลพนักงาน</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="name@company.com" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold">รหัสผ่าน</label>
+                    <input type="password" id="loginPass" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">เข้าสู่ระบบ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application View -->
+    <div id="view-main" class="wrapper d-none">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-brand">
+                <i class="bi bi-layers-fill"></i>
+                <span>Enterprise QA</span>
+            </div>
+            <nav class="mt-3">
+                <a href="#" onclick="navigate('dashboard')" id="n-dashboard" class="nav-link active">
+                    <i class="bi bi-grid-1x2"></i> Dashboard
+                </a>
+                <a href="#" onclick="navigate('form')" id="n-form" class="nav-link">
+                    <i class="bi bi-plus-circle"></i> New Evaluation
+                </a>
+                <a href="#" onclick="navigate('history')" id="n-history" class="nav-link">
+                    <i class="bi bi-journal-text"></i> Records
+                </a>
+                <div class="px-4 mt-4 mb-2 small text-uppercase text-muted fw-bold" style="font-size: 0.65rem;">Administrator</div>
+                <a href="#" onclick="navigate('settings')" id="n-settings" class="nav-link">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+                <a href="#" onclick="logout()" class="nav-link text-danger mt-5">
+                    <i class="bi bi-box-arrow-left"></i> Sign Out
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 id="page-title" class="fw-bold mb-0">Overview</h4>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item small"><a href="#">Home</a></li>
+                            <li id="breadcrumb-active" class="breadcrumb-item active small" aria-current="page">Dashboard</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-md-block">
+                        <div id="u-name" class="fw-bold small">User Name</div>
+                        <div id="u-role" class="text-muted" style="font-size: 0.7rem;">Role</div>
+                    </div>
+                    <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" id="u-avatar" style="width: 40px; height: 40px;">U</div>
+                </div>
+            </header>
+
+            <!-- Dashboard Content -->
+            <div id="sub-dashboard">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <div class="text-muted small fw-bold">คะแนนเฉลี่ยทีม</div>
+                            <div id="d-avg" class="h3 fw-bold mt-2">0.00%</div>
+                            <i class="bi bi-bar-chart-fill stats-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <div class="text-muted small fw-bold">จำนวนเคสทั้งหมด</div>
+                            <div id="d-total" class="h3 fw-bold mt-2">0</div>
+                            <i class="bi bi-clipboard-check stats-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <div class="text-muted small fw-bold">ระดับคะแนน A</div>
+                            <div id="d-a" class="h3 fw-bold mt-2">0</div>
+                            <i class="bi bi-trophy stats-icon"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stats-card">
+                            <div class="text-muted small fw-bold">ความพึงพอใจ</div>
+                            <div class="h3 fw-bold mt-2 text-success">Excellent</div>
+                            <i class="bi bi-emoji-smile stats-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span>สถิติรายบุคคล (Top 5 Admins)</span>
+                                <button class="btn btn-sm btn-light border" onclick="initDashboard()"><i class="bi bi-arrow-repeat"></i></button>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartAdmin" height="300"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-header">สัดส่วนช่องทางบริการ</div>
+                            <div class="card-body d-flex align-items-center">
+                                <canvas id="chartChannel"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Evaluation Form -->
+            <div id="sub-form" class="d-none">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card mb-4">
+                            <div class="card-header">ข้อมูลเบื้องต้น</div>
+                            <div class="card-body">
+                                <form id="qaForm" onsubmit="handleEvalSubmit(event)">
+                                    <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label class="form-label small fw-bold">ประเภทแบบฟอร์มการประเมิน</label>
+                                            <select id="f_type" class="form-select" onchange="loadWeights()" required>
+                                                <option value="" disabled selected>เลือกแบบฟอร์มเพื่อโหลดเกณฑ์...</option>
+                                                <option>THP Supervisor - 2026</option>
+                                                <option>THP Support Admin - 2026</option>
+                                                <option>Senior THP Admin (อายุงาน 3 เดือนขึ้นไป) - 2026</option>
+                                                <option>New THP Admin (อายุงานไม่เก็น 3 เดือน) - 2026</option>
+                                                <option>OS Supervisor - 2026</option>
+                                                <option>Senior OS Admin (อายุงาน 3 เดือนขึ้นไป) - 2026</option>
+                                                <option>Skill Eng. Senior Admin - 2026</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">Admin ผู้ถูกประเมิน</label>
+                                            <select id="f_admin" class="form-select" required></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">ช่องทาง (Channel)</label>
+                                            <select id="f_channel" class="form-select" required>
+                                                <option>email</option><option>facebook(timeline)</option><option>facebook(inbox)</option>
+                                                <option>pantip(timeline)</option><option>pantip(inbox)</option><option>x(timeline)</option>
+                                                <option>x(DM)</option><option>social อื่นๆ</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">วันที่ใบงาน</label>
+                                            <input type="date" id="f_work_date" class="form-control" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">เลขเคส (Salesforce ID)</label>
+                                            <input type="text" id="f_case" class="form-control" placeholder="Ex. SF-123456" required>
+                                        </div>
+                                    </div>
+
+                                    <hr class="my-5">
+                                    <h6 class="fw-bold mb-4 text-primary"><i class="bi bi-check2-circle me-2"></i>เกณฑ์การประเมินรายหัวข้อ</h6>
+                                    
+                                    <div id="qa-topics-container">
+                                        <div class="text-center py-5 text-muted">
+                                            <i class="bi bi-clipboard2-plus d-block mb-2" style="font-size: 2rem;"></i>
+                                            กรุณาเลือกประเภทแบบฟอร์มเพื่อแสดงรายการประเมิน
+                                        </div>
+                                    </div>
+
+                                    <div class="card-custom p-4 mt-5 bg-light rounded-4">
+                                        <h6 class="fw-bold mb-3">บทสรุปและข้อเสนอแนะ</h6>
+                                        <div class="mb-3">
+                                            <label class="small text-muted mb-1">ภาพรวม (Overall Comment)</label>
+                                            <textarea id="f_comment" class="form-control" rows="3"></textarea>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="small text-muted mb-1">จุดที่ต้องปรับปรุง</label>
+                                                <textarea id="f_improve" class="form-control" rows="2"></textarea>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="small text-muted mb-1">จุดเด่น / คำชม</label>
+                                                <textarea id="f_strengths" class="form-control" rows="2"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-4 border-top text-end">
+                                        <button type="submit" class="btn btn-primary px-5 py-2 shadow">บันทึกผลการประเมิน</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sticky Score Board -->
+                    <div class="col-lg-4">
+                        <div class="sticky-top" style="top: 2rem;">
+                            <div class="score-display shadow-lg mb-4">
+                                <div class="small text-white-50">SCORE PERCENTAGE</div>
+                                <div id="f-percent" class="display-4 fw-bold">0%</div>
+                                <div id="f-grade" class="badge bg-white text-primary mt-2 px-3 py-2">Grade -</div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="fw-bold small mb-3">คู่มือการให้คะแนน</h6>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-success me-2">3</span> <span class="small text-muted">ดีเยี่ยม/ถูกต้อง (100%)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge bg-warning me-2">2</span> <span class="small text-muted">พอใช้/ผิดพลาดเล็กน้อย (50%)</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-danger me-2">1</span> <span class="small text-muted">ต้องปรับปรุง (0%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History View -->
+            <div id="sub-history" class="d-none">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span>รายการประเมินย้อนหลัง</span>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm" placeholder="ค้นหาเคส/Admin...">
+                            <button class="btn btn-sm btn-primary" onclick="initHistory()">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">DATE</th>
+                                    <th>ADMIN</th>
+                                    <th>CASE REF</th>
+                                    <th>FORM TYPE</th>
+                                    <th>SCORE</th>
+                                    <th>GRADE</th>
+                                    <th class="text-end pe-4">ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-msg"></div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // JS Logic with Clean Architecture
+        let currentUser = null;
+        let activeWeights = [];
+
+        function showLoader(v) { document.getElementById('loader').classList.toggle('d-none', !v); }
+
+        function showToast(msg, type='primary') {
+            const toastEl = document.getElementById('liveToast');
+            toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+            document.getElementById('toast-msg').innerText = msg;
+            new bootstrap.Toast(toastEl).show();
+        }
+
+        function toggleView(v) {
+            document.getElementById('view-auth').classList.toggle('d-none', v);
+            document.getElementById('view-main').classList.toggle('d-none', !v);
+        }
+
+        function navigate(section) {
+            const titles = { 'dashboard': 'Overview', 'form': 'New Evaluation', 'history': 'Record History', 'settings': 'System Settings' };
+            document.getElementById('page-title').innerText = titles[section];
+            document.getElementById('breadcrumb-active').innerText = titles[section];
+            
+            ['dashboard', 'form', 'history'].forEach(s => {
+                document.getElementById(`sub-${s}`).classList.add('d-none');
+                document.getElementById(`n-${s}`).classList.remove('active');
+            });
+
+            document.getElementById(`sub-${section}`).classList.remove('d-none');
+            document.getElementById(`n-${section}`).classList.add('active');
+
+            if(section === 'dashboard') initDashboard();
+            if(section === 'history') initHistory();
+            if(section === 'form') initFormMaster();
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            showLoader(true);
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            
+            google.script.run.withSuccessHandler(res => {
+                showLoader(false);
+                if(res.success) {
+                    currentUser = res.user;
+                    updateUserInfo();
+                    toggleView(true);
+                    navigate('dashboard');
+                    showToast(`ยินดีต้อนรับคุณ ${res.user.firstname}`, 'success');
+                } else {
+                    showToast(res.message, 'danger');
+                }
+            }).loginUser(email, pass);
+        }
+
+        function updateUserInfo() {
+            document.getElementById('u-name').innerText = `${currentUser.firstname} ${currentUser.lastname}`;
+            document.getElementById('u-role').innerText = currentUser.role.toUpperCase();
+            document.getElementById('u-avatar').innerText = currentUser.firstname[0].toUpperCase();
+        }
+
+        // --- DASHBOARD LOGIC ---
+        function initDashboard() {
+            showLoader(true);
+            google.script.run.withSuccessHandler(data => {
+                showLoader(false);
+                if(!data) return;
+                document.getElementById('d-avg').innerText = data.avg + "%";
+                document.getElementById('d-total').innerText = data.total;
+                document.getElementById('d-a').innerText = data.gradeA;
+                renderCharts(data);
+            }).getDashboardData();
+        }
+
+        function renderCharts(data) {
+            // Chart.js implementation here (same as before but with updated colors)
+            const ctx = document.getElementById('chartAdmin').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.chart.map(x => x.name),
+                    datasets: [{
+                        label: 'Avg Score %',
+                        data: data.chart.map(x => x.avg),
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 8
+                    }]
+                },
+                options: { 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100 } } 
+                }
+            });
+
+            const ctx2 = document.getElementById('chartChannel').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data.channels),
+                    datasets: [{
+                        data: Object.values(data.channels),
+                        backgroundColor: ['#4f46e5', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe']
+                    }]
+                },
+                options: { cutout: '70%' }
+            });
+        }
+
+        // --- EVALUATION FORM LOGIC ---
+        function initFormMaster() {
+            google.script.run.withSuccessHandler(res => {
+                const sel = document.getElementById('f_admin');
+                sel.innerHTML = '<option disabled selected>เลือก Admin...</option>';
+                res.admins.forEach(a => sel.innerHTML += `<option>${a}</option>`);
+            }).getMasterData();
+        }
+
+        function loadWeights() {
+            const formName = document.getElementById('f_type').value;
+            showLoader(true);
+            google.script.run.withSuccessHandler(res => {
+                showLoader(false);
+                activeWeights = res;
+                renderTopics();
+            }).getWeights(formName);
+        }
+
+        function renderTopics() {
+            const container = document.getElementById('qa-topics-container');
+            container.innerHTML = '';
+            activeWeights.forEach((w, i) => {
+                container.innerHTML += `
+                <div class="eval-topic-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <div class="fw-bold text-primary mb-1">${i+1}. ${w.topic}</div>
+                            <p class="small text-muted mb-2">${w.description.replace(/\n/g, '<br>')}</p>
+                            <span class="badge bg-light text-muted border">น้ำหนัก: ${w.weight}%</span>
+                        </div>
+                        <div class="col-md-5 mt-3 mt-md-0">
+                            <div class="d-flex flex-column gap-2">
+                                <div class="btn-group w-100">
+                                    <input type="radio" class="btn-check" name="sc_${i}" id="sc_${i}_3" value="3" onchange="calculateRealtime()" checked>
+                                    <label class="btn btn-outline-success btn-sm" for="sc_${i}_3">3 (ดี)</label>
+                                    <input type="radio" class="btn-check" name="sc_${i}" id="sc_${i}_2" value="2" onchange="calculateRealtime()">
+                                    <label class="btn btn-outline-warning btn-sm" for="sc_${i}_2">2 (พอใช้)</label>
+                                    <input type="radio" class="btn-check" name="sc_${i}" id="sc_${i}_1" value="1" onchange="calculateRealtime()">
+                                    <label class="btn btn-outline-danger btn-sm" for="sc_${i}_1">1 (ปรับปรุง)</label>
+                                </div>
+                                <input type="text" id="cm_${i}" class="form-control form-control-sm" placeholder="ระบุเหตุผล/คอมเมนต์...">
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            calculateRealtime();
+        }
+
+        function calculateRealtime() {
+            let weightedSum = 0, totalWeight = 0;
+            activeWeights.forEach((w, i) => {
+                const score = parseInt(document.querySelector(`input[name="sc_${i}"]:checked`).value);
+                weightedSum += (score / 3) * w.weight;
+                totalWeight += w.weight;
+            });
+            
+            const percent = totalWeight > 0 ? (weightedSum / (totalWeight / 100)) : 0;
+            const display = document.getElementById('f-percent');
+            display.innerText = percent.toFixed(1) + "%";
+            
+            let grade = 'D';
+            let gColor = 'bg-danger';
+            if(percent >= 90) { grade = 'A'; gColor = 'bg-success'; }
+            else if(percent >= 80) { grade = 'B'; gColor = 'bg-primary'; }
+            else if(percent >= 70) { grade = 'C'; gColor = 'bg-warning text-dark'; }
+            
+            const gBadge = document.getElementById('f-grade');
+            gBadge.innerText = `Grade ${grade}`;
+            gBadge.className = `badge mt-2 px-3 py-2 text-white ${gColor}`;
+        }
+
+        function handleEvalSubmit(e) {
+            e.preventDefault();
+            const details = activeWeights.map((w, i) => ({
+                topic: w.topic,
+                weight: w.weight,
+                score: parseInt(document.querySelector(`input[name="sc_${i}"]:checked`).value),
+                comment: document.getElementById(`cm_${i}`).value
+            }));
+
+            const header = {
+                form_type: document.getElementById('f_type').value,
+                supervisor: currentUser.email,
+                admin: document.getElementById('f_admin').value,
+                work_date: document.getElementById('f_work_date').value,
+                channel: document.getElementById('f_channel').value,
+                case_ref: document.getElementById('f_case').value,
+                total_score: 0, // Calculated on server
+                percent: parseFloat(document.getElementById('f-percent').innerText),
+                comment: document.getElementById('f_comment').value,
+                improvement: document.getElementById('f_improve').value,
+                strengths: document.getElementById('f_strengths').value
+            };
+
+            showLoader(true);
+            google.script.run.withSuccessHandler(res => {
+                showLoader(false);
+                if(res.success) {
+                    showToast("บันทึกข้อมูลการประเมินเรียบร้อยแล้ว", "success");
+                    e.target.reset();
+                    navigate('history');
+                }
+            }).submitEvaluation(header, details);
+        }
+
+        // --- HISTORY ---
+        function initHistory() {
+            showLoader(true);
+            google.script.run.withSuccessHandler(data => {
+                showLoader(false);
+                const body = document.getElementById('history-body');
+                body.innerHTML = '';
+                data.forEach(h => {
+                    body.innerHTML += `
+                    <tr>
+                        <td class="ps-4 small text-muted">${new Date(h.eval_date).toLocaleDateString()}</td>
+                        <td class="fw-bold">${h.admin_name}</td>
+                        <td><span class="badge bg-light text-primary border">${h.case_ref}</span></td>
+                        <td class="small text-muted">${h.form_type}</td>
+                        <td class="fw-bold">${h.percent.toFixed(1)}%</td>
+                        <td><span class="badge bg-${h.grade==='A'?'success':h.grade==='B'?'primary':'warning'} text-white">${h.grade}</span></td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            }).getEvaluations();
+        }
+
+        function logout() { location.reload(); }
+    </script>
+</body>
+</html>
